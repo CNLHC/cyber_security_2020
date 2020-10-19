@@ -1,0 +1,10 @@
+openssl req\
+    -new\ 
+    -newkey rsa:4096 \ 
+    -x509 \ 
+    -sha256 \ 
+    -days 365 \
+    -nodes \ 
+    -out scse_assign.crt \ 
+    -keyout scse_assign.key \ 
+
